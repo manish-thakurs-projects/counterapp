@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Counter App</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f4f4f4;
+      color: #333;
+      transition: background-color 0.3s, color 0.3s;
+      overflow: hidden;
+    }
+    .header {
+      position: absolute;
+      top: 30px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+    .stopwatch {
+      font-size: 26px;
+      cursor: pointer;
+    }
+    .mode-toggle {
+      font-size: 26px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .counter-container {
+      text-align: center;
+      margin-top: 50px;
+    }
+    .counter {
+      font-size: 300px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      line-height: 1;
+      white-space: nowrap;
+      max-width: 90vw;
+      overflow: hidden;
+    }
+    .line-input {
+      position: relative;
+      width: 150px;
+      margin-top: 20px;
+    }
+    .line-input input {
+      width: 100%;
+      border: none;
+      border-bottom: 2px solid #ccc;
+      outline: none;
+      font-size: 16px;
+      padding: 5px 0;
+      background: transparent;
+      color: inherit;
+      transition: border-color 0.3s;
+      text-align: center;
+    }
+    .line-input input::placeholder {
+      text-align: center; 
+      color: #aaa;
+    }
+    .line-input input:focus {
+      border-bottom-color: #000000;
+    }
+    body.dark-mode {
+      background-color: #000000;
+      color: #f4f4f4;
+    }
+    body.dark-mode .line-input input {
+      border-bottom-color: #f4f4f4;
+    }
+    body.dark-mode .line-input input:focus {
+      border-bottom-color: #ffffff;
+    }
+    body.dark-mode .line-input input::placeholder {
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="stopwatch" id="stopwatch">00:00:00.000</div>
+    <div class="mode-toggle" id="modeToggle">
+      <i class="fa-solid fa-sun"></i>
+      <i class="fa-solid fa-moon" style="display: none;"></i>
+    </div>
+  </div>
+  <div class="counter-container">
+    <div class="counter" id="counter">0</div>
+  </div>
+  <div class="line-input">
+    <input type="number" id="customInput" placeholder="Enter number">
+  </div>
+  <script>
+    let count = 0;
+    const counterElement = document.getElementById('counter');
+    const customInput = document.getElementById('customInput');
+    const modeToggle = document.getElementById('modeToggle');
+
+    let stopwatchInterval;
+    let stopwatchRunning = false;
+    let stopwatchTime = 0;
+    const stopwatchElement = document.getElementById('stopwatch');
+
+    function formatTime(time) {
+      const hours = String(Math.floor(time / 3600000)).padStart(2, '0');
+      const minutes = String(Math.floor((time % 3600000) / 60000)).padStart(2, '0');
+      const seconds = String(Math.floor((time % 60000) / 1000)).padStart(2, '0');
+      const milliseconds = String(time % 1000).padStart(3, '0');
+      return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+    }
+
+    function updateStopwatch() {
+      stopwatchTime += 10;
+      stopwatchElement.textContent = formatTime(stopwatchTime);
+    }
+
+    let lastClickTime = 0;
+    const DOUBLE_CLICK_THRESHOLD = 300;
+
+    stopwatchElement.addEventListener('click', () => {
+      const currentTime = new Date().getTime();
+      if (currentTime - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
+        clearInterval(stopwatchInterval);
+        stopwatchRunning = false;
+        stopwatchTime = 0;
+        stopwatchElement.textContent = formatTime(stopwatchTime);
+        lastClickTime = 0;
+        return;
+      }
+      lastClickTime = currentTime;
+      if (stopwatchRunning) {
+        clearInterval(stopwatchInterval);
+        stopwatchRunning = false;
+      } else {
+        stopwatchInterval = setInterval(updateStopwatch, 10); 
+        stopwatchRunning = true;
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (
+        event.target === stopwatchElement ||
+        event.target.closest('.mode-toggle') ||
+        event.target.tagName === 'INPUT' 
+      ) {
+        return;
+      }
+      const screenWidth = window.innerWidth;
+      const clickX = event.clientX;
+      if (clickX < screenWidth / 2) {
+        count -= 1;
+      } else {
+        count += 1;
+      }
+      updateCounter();
+    });
+
+    customInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        const inputValue = parseInt(customInput.value, 10);
+        if (!isNaN(inputValue)) {
+          count += inputValue;
+          updateCounter();
+        }
+        customInput.value = '';
+      }
+    });
+
+    const sunIcon = modeToggle.querySelector('.fa-sun');
+    const moonIcon = modeToggle.querySelector('.fa-moon');
+
+    modeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      if (document.body.classList.contains('dark-mode')) {
+        sunIcon.style.display = 'none';
+        moonIcon.style.display = 'inline-block';
+      } else {
+        sunIcon.style.display = 'inline-block';
+        moonIcon.style.display = 'none';
+      }
+    });
+
+    function updateCounter() {
+      counterElement.textContent = count;
+
+      const maxWidth = window.innerWidth * 0.9;
+      let fontSize = 300;
+      counterElement.style.fontSize = `${fontSize}px`;
+
+      while (counterElement.scrollWidth > maxWidth && fontSize > 10) {
+        fontSize -= 5;
+        counterElement.style.fontSize = `${fontSize}px`;
+      }
+    }
+  </script>
+</body>
+</html>
